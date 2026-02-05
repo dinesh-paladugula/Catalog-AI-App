@@ -13,3 +13,4 @@ wheels/
 .env
 
 /storage/
+/rag_app/data/
