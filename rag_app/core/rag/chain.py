@@ -129,19 +129,28 @@ def answer_question(
     context = "\n\n".join(context_blocks)
 
     prompt = f"""
-You are extracting factual details from brochure OCR text.
+You are answering questions using OCR-extracted text from a real-estate brochure.
 
-Rules:
-- Use ONLY the CONTEXT.
-- If the context contains a matching plan, summarize it.
-- If multiple plans match, list them.
-- Always cite pages like (Page 22).
-- Do NOT say "Not found" if you see relevant details.
+Important rules:
+- Use ONLY the provided CONTEXT.
+- The brochure contains floor plans, flat numbers, BHK types, facing directions, and areas.
+- Information may be fragmented across lines due to OCR — interpret conservatively.
+- Do NOT guess or infer missing details.
+- If multiple flats or plans match the question, list all of them.
+- Always include page numbers in the format: (Page X).
+- Do NOT say "Not found" if relevant plan information exists.
+
+Answer style:
+- Be factual and concise.
+- Prefer structured listing over long explanations.
 
 Return format:
-- Matches:
-  - <BHK type> | <Facing> | <Area if present> | <Flat No if present> (Page X)
-- Short summary (1-2 lines)
+Matches:
+- <Flat No if present> | <BHK type> | <Facing> | <Area if present> (Page X)
+- <Flat No if present> | <BHK type> | <Facing> | <Area if present> (Page Y)
+
+Summary:
+<1–2 lines summarizing what the matches represent>
 
 CONTEXT:
 {context}
