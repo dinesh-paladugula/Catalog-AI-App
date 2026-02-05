@@ -12,4 +12,4 @@ wheels/
 # Environmental Variables
 .env
 
-storage/
+/storage/
