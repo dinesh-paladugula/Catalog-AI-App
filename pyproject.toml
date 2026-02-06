@@ -20,5 +20,6 @@ dependencies = [
     "pytesseract>=0.3.13",
     "python-dotenv>=1.2.1",
     "sentence-transformers>=5.2.2",
+    "streamlit>=1.54.0",
     "uvicorn>=0.40.0",
 ]
