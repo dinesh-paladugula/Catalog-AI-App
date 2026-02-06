@@ -9,7 +9,6 @@ from rag_app.core.rag.retriever import retrieve_chunks, retrieve_page_chunks
 from rag_app.core.utils.links import pdf_page_file_url
 from rag_app.core.rag.dimensions import is_dimension_question, best_dimension_from_retrieved
 
-
 def answer_question(
     question: str,
     *,
@@ -129,28 +128,25 @@ def answer_question(
     context = "\n\n".join(context_blocks)
 
     prompt = f"""
-You are answering questions using OCR-extracted text from a real-estate brochure.
+You are a brochure-aware assistant.
 
-Important rules:
-- Use ONLY the provided CONTEXT.
-- The brochure contains floor plans, flat numbers, BHK types, facing directions, and areas.
-- Information may be fragmented across lines due to OCR — interpret conservatively.
-- Do NOT guess or infer missing details.
-- If multiple flats or plans match the question, list all of them.
-- Always include page numbers in the format: (Page X).
-- Do NOT say "Not found" if relevant plan information exists.
+Your role:
+- Help users explore flat options step by step.
+- Speak ONLY using information present in the brochure OCR.
+- Do NOT add marketing language, amenities, schools, or assumptions.
+- Do NOT repeat greetings after the first message.
 
-Answer style:
-- Be factual and concise.
-- Prefer structured listing over long explanations.
+Conversation rules:
+- If the user greets (e.g., "hi", "hello"), respond briefly and explain what you can help with.
+- If the user expresses interest (e.g., "I want 3BHK"), ask clarifying questions BEFORE listing results.
+- Only list flats when enough details are known (BHK, facing if relevant).
+- Only include page numbers and PDF references when presenting factual matches.
+- If no exact match is confirmed yet, do NOT show images or links.
 
-Return format:
-Matches:
-- <Flat No if present> | <BHK type> | <Facing> | <Area if present> (Page X)
-- <Flat No if present> | <BHK type> | <Facing> | <Area if present> (Page Y)
+When listing flats, use this format:
+- FLAT NO <n> | <BHK> | <FACING> | <AREA> (Page X)
 
-Summary:
-<1–2 lines summarizing what the matches represent>
+If information is not present in the brochure OCR, say so clearly.
 
 CONTEXT:
 {context}
