@@ -7,7 +7,7 @@ ROOM_SYNONYMS = {
     "master bedroom": "M.BEDROOM",
     "m.bedroom": "M.BEDROOM",
     "mbedroom": "M.BEDROOM",
-    "drawing room": "DRAWING",
+    "drawing room": "DRAWNG",
     "drawing": "DRAWING",
     "living": "LIVING & DINING",
     "living & dining": "LIVING & DINING",
@@ -46,11 +46,11 @@ def normalize_room_from_question(question: str) -> Optional[str]:
 
 
 def _format_ft_in(a_ft: str, a_in: str, b_ft: str, b_in: str) -> str:
-    return f"{a_ft} ft {a_in} in × {b_ft} ft {b_in} in"
+    return f"{a_ft} ft {a_in} in x {b_ft} ft {b_in} in"
 
 
 def _format_in(a: str, b: str) -> str:
-    return f"{a} in × {b} in"
+    return f"{a} in x {b} in"
 
 
 def extract_room_dimension_from_text(text: str, wanted_room: str) -> Optional[Dict]:
