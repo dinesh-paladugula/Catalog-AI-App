@@ -45,8 +45,7 @@ def ingest_pdf(
                 "chunk_index": c.chunk_index,
                 "text": c.text,
                 "embedding": v,
-                "image_path": c.image_path,   # Streamlit can show this image
-                "source_pdf": pdf_path,
+                "image_path": c.image_path,
             }
         )
 
