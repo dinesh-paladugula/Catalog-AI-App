@@ -66,7 +66,7 @@ An advanced Retrieval-Augmented Generation (RAG) application designed to provide
 
 Start the Streamlit frontend using uv:
 ```bash
-uv run streamlit run rag_app/apps/ui/app.py
+ uv run python -m streamlit run rag_app/apps/ui/app.py
 ```
 
 ## 📂 Project Structure
