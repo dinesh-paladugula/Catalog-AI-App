@@ -39,7 +39,6 @@ def retrieve_chunks(
                 "chunk_index": 1,
                 "text": 1,
                 "image_path": 1,
-                "source_pdf": 1,
                 "score": {"$meta": "vectorSearchScore"},
             }
         },
@@ -85,7 +84,6 @@ def retrieve_page_chunks(
                 "chunk_index": 1,
                 "text": 1,
                 "image_path": 1,
-                "source_pdf": 1,
                 "score": {"$meta": "vectorSearchScore"},
             }
         },

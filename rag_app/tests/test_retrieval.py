@@ -3,9 +3,9 @@ from rag_app.core.rag.chain import answer_question
 # Option A: if you know the exact page you want, set page_num=10 (example).
 # If you don't know the page yet, keep page_num=None (default) for normal retrieval.
 res = answer_question(
-    "Master bedroom dimensions for 2BHK east facing",
+    "Can you show me site plan?",
     tenant_id="tenant_01",
-    doc_id="sample_01",
+    doc_id="My-Home-Tridasa-E-Brochure",
     k=5,
     index_name="vector_index",
 )
@@ -28,6 +28,5 @@ print("\nTOP CHUNKS:")
 for r in res["retrieved"]:
     print("score:", r.get("score"), "| page:", r.get("page_num"), "| chunk:", r.get("chunk_index"))
     print((r.get("text") or "")[:180])
-    print("PDF:", r.get("source_pdf"))
     print("IMG:", r.get("image_path"))
     print("-" * 50)
