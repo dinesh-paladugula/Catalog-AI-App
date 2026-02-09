@@ -1,4 +1,4 @@
-# 🏢 Catalog AI Assistant
+# 🏢 Catalog AI - Assistant
 
 An advanced Retrieval-Augmented Generation (RAG) application designed to provide direct, factual information about the **My Home Tridasa** real estate project. This tool extracts data from project brochures, including floor plans, site layouts, and room dimensions, providing cited answers alongside relevant visual aids.
 
@@ -14,15 +14,17 @@ An advanced Retrieval-Augmented Generation (RAG) application designed to provide
 ## 🛠️ Technical Stack
 
 *   **Frontend**: [Streamlit](https://streamlit.io/)
-*   **LLM**: [Groq API](https://groq.com/) (Llama / OpenAI / Qwen)
+*   **LLM**: [Groq API](https://groq.com/) (Llama 3 / Mixtral)
 *   **Vector Database**: [MongoDB Atlas Vector Search](https://www.mongodb.com/products/platform/atlas-vector-search)
 *   **Embeddings**: [HuggingFace](https://huggingface.co/)
 *   **OCR**: [Tesseract OCR](https://github.com/tesseract-ocr/tesseract)
 *   **Framework**: [LangChain](https://www.langchain.com/)
+*   **Package Manager**: [uv](https://github.com/astral-sh/uv)
 
 ## 📋 Prerequisites
 
 - Python 3.12+
+- [uv](https://github.com/astral-sh/uv) installed on your system.
 - Tesseract OCR installed on your system.
 - A MongoDB Atlas account with a Vector Search index named `vector_index`.
 - API Keys for Groq and HuggingFace.
@@ -35,9 +37,14 @@ An advanced Retrieval-Augmented Generation (RAG) application designed to provide
     cd CatalogAIApp
     ```
 
-2.  **Install dependencies**:
+2.  **Install dependencies using uv**:
     ```bash
-    pip install -r requirements.txt
+    # Create virtual environment and install dependencies
+    uv sync
+    ```
+    *Alternatively, if using uv pip:*
+    ```bash
+    uv pip install -r requirements.txt
     ```
 
 3.  **Configure Environment Variables**:
@@ -52,14 +59,14 @@ An advanced Retrieval-Augmented Generation (RAG) application designed to provide
 4.  **Ingest Data**:
     Place the brochure PDF in `rag_app/data/raw/` and run the ingestion pipeline:
     ```bash
-    python run_ingest.py
+    uv run run_ingest.py
     ```
 
 ## 🖥️ Running the App
 
-Start the Streamlit frontend:
+Start the Streamlit frontend using uv:
 ```bash
-python -m streamlit run rag_app/apps/ui/app.py
+uv run streamlit run rag_app/apps/ui/app.py
 ```
 
 ## 📂 Project Structure
