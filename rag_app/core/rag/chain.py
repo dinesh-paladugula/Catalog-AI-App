@@ -1,5 +1,3 @@
-# rag_app/core/rag/chain.py
-
 from typing import Any, Dict, List, Optional
 
 from groq import Groq
@@ -9,28 +7,24 @@ from rag_app.core.rag.retriever import retrieve_chunks, retrieve_page_chunks
 from rag_app.core.utils.links import pdf_page_file_url
 from rag_app.core.rag.dimensions import is_dimension_question, best_dimension_from_retrieved
 
+
 def answer_question(
     question: str,
     *,
     tenant_id: str,
     doc_id: Optional[str] = None,
-    k: int = 5,
+    k: int = 15,  # High k for better coverage
     index_name: str = "vector_index",
     page_num: Optional[int] = None,
+    chat_history: Optional[List[Dict[str, str]]] = None,
 ) -> Dict[str, Any]:
     """
-    If page_num is provided -> strict page-locked retrieval (Option A).
-    Else -> normal retrieval.
-
-    Returns:
-      - answer
-      - citations (page numbers + pdf_link + image_path)
-      - image_paths (unique)
-      - retrieved (raw chunks + scores)
-      - primary_pdf_link
+    Main RAG chain to answer user questions with strict formatting rules.
     """
 
+    # -------------------------
     # 1) Retrieve
+    # -------------------------
     if page_num is not None:
         if not doc_id:
             raise ValueError("doc_id is required when page_num is provided")
@@ -52,25 +46,30 @@ def answer_question(
             index_name=index_name,
         )
 
-    # 2) Build context + citations + image list (+ pdf links)
+    # -------------------------
+    # 2) Build context + citations
+    # -------------------------
     context_blocks: List[str] = []
     citations: List[Dict[str, Any]] = []
     image_paths: List[str] = []
     primary_pdf_link: Optional[str] = None
 
+    def build_pdf_link(page: Optional[int]) -> Optional[str]:
+        if page is None or not doc_id:
+            return None
+        return pdf_page_file_url(doc_id, int(page))
+
     for r in retrieved:
         page = r.get("page_num")
         img = r.get("image_path")
         txt = (r.get("text") or "").strip()
-        source_pdf = r.get("source_pdf")
 
-        context_blocks.append(f"[Page {page}] {txt}")
+        context_blocks.append(f"[SOURCE: Page {page}]\n{txt}\n[END SOURCE]")
 
-        pdf_link = None
-        if source_pdf and page is not None:
-            pdf_link = pdf_page_file_url(source_pdf, int(page))
-            if primary_pdf_link is None:
-                primary_pdf_link = pdf_link
+        pdf_link = build_pdf_link(page)
+
+        if pdf_link and primary_pdf_link is None:
+            primary_pdf_link = pdf_link
 
         citations.append(
             {
@@ -85,76 +84,55 @@ def answer_question(
         if img and img not in image_paths:
             image_paths.append(img)
 
-    # 3) DIMENSION MODE (deterministic): answer only if OCR contains it, else refer image
+    # -------------------------
+    # 3) DIMENSION MODE (Specialized extraction)
+    # -------------------------
     if is_dimension_question(question):
         found = best_dimension_from_retrieved(retrieved, question)
 
         if found:
             dim, row = found
             page = row.get("page_num")
-            pdf_link = None
-            if row.get("source_pdf") and page is not None:
-                pdf_link = pdf_page_file_url(row["source_pdf"], int(page))
+            pdf_link = build_pdf_link(page)
+            img = row.get("image_path")
 
-            answer = f'{dim["room"]}: {dim["value"]} (Page {page})'
+            answer = f'The {dim["room"]} dimension is {dim["value"]} (Page {page}).'
+
             return {
                 "answer": answer,
                 "citations": citations,
-                "image_paths": image_paths,
+                "image_paths": [img] if img else image_paths,
                 "primary_pdf_link": pdf_link or primary_pdf_link,
                 "retrieved": retrieved,
             }
 
-        # Not found in OCR -> refer image (no guessing)
-        top = retrieved[0] if retrieved else {}
-        page = top.get("page_num")
-        pdf_link = None
-        if top.get("source_pdf") and page is not None:
-            pdf_link = pdf_page_file_url(top["source_pdf"], int(page))
-
-        answer = (
-            "Room dimensions are not available in extracted OCR text. "
-            f"Please refer to the floor-plan image. (Page {page})"
-        )
-        return {
-            "answer": answer,
-            "citations": citations,
-            "image_paths": image_paths,
-            "primary_pdf_link": pdf_link or primary_pdf_link,
-            "retrieved": retrieved,
-        }
-
-    # 4) Normal brochure extraction via LLM
+    # -------------------------
+    # 4) Normal LLM Mode (Refined for conciseness)
+    # -------------------------
     context = "\n\n".join(context_blocks)
+    
+    is_first_message = not chat_history or len(chat_history) == 0
 
     prompt = f"""
-You are a brochure-aware assistant.
+SYSTEM: You are a direct, factual data extraction engine for the "My Home Tridasa" brochure.
+TASK: Answer the user's question using ONLY the provided context.
 
-Your role:
-- Help users explore flat options step by step.
-- Speak ONLY using information present in the brochure OCR.
-- Do NOT add marketing language, amenities, schools, or assumptions.
-- Do NOT repeat greetings after the first message.
-
-Conversation rules:
-- If the user greets (e.g., "hi", "hello"), respond briefly and explain what you can help with.
-- If the user expresses interest (e.g., "I want 3BHK"), ask clarifying questions BEFORE listing results.
-- Only list flats when enough details are known (BHK, facing if relevant).
-- Only include page numbers and PDF references when presenting factual matches.
-- If no exact match is confirmed yet, do NOT show images or links.
-
-When listing flats, use this format:
-- FLAT NO <n> | <BHK> | <FACING> | <AREA> (Page X)
-
-If information is not present in the brochure OCR, say so clearly.
+STRICT FORMATTING RULES:
+1. NO GREETINGS. No "Hello", "Hi", "Welcome".
+2. NO FILLERS. No "Based on the brochure", "I found that".
+3. NO BULLET POINTS. Provide the answer in a single, well-structured paragraph.
+4. BE CONCISE. Avoid unnecessary details. If multiple facts are requested, join them with commas or semicolons in a paragraph.
+5. CITATIONS: Cite the page number in parentheses at the end of relevant sentences, e.g., (Page 5).
+6. START IMMEDIATELY with the answer.
+7. GREETING EXCEPTION: ONLY if the user's message is just a greeting AND this is the start of the conversation, respond with: "I am the My Home Tridasa assistant. How can I help you with project details?"
 
 CONTEXT:
 {context}
 
-QUESTION:
+USER QUESTION:
 {question}
 
-ANSWER:
+FINAL ANSWER (Paragraph form, Direct and Factual):
 """.strip()
 
     if not GROQ_API_KEY:
@@ -166,7 +144,7 @@ ANSWER:
     resp = client.chat.completions.create(
         model=GROQ_MODEL,
         messages=[{"role": "user", "content": prompt}],
-        temperature=0.2,
+        temperature=0.0,
     )
 
     answer = resp.choices[0].message.content.strip()
